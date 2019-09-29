@@ -1,3 +1,5 @@
+rm(list = ls())
+
 library(tidyverse)
 library(sf)
 library(janitor)
@@ -28,12 +30,38 @@ mo_schools_diverse_chg <-
   mo_schools %>%
   group_by(geoid) %>%
   mutate(diverse_pct = round(100 - white,2),
-         org_diverse = lag(diverse, default = first(diverse)),
-         org_diverse_pct = lag(round(100 - white,2), default = first(white)),
+         orginal_diverse = lag(diverse, default = first(diverse)),
+         orginal_diverse_pct = lag(round(100 - white,2), default = first(white)),
          pct_change = 
-           round((diverse_pct - org_diverse_pct)/org_diverse_pct,2)) %>%
-  select(geoid,lea_name,st,d_locale_txt,school_year,diverse:pct_change)
+           round((diverse_pct - orginal_diverse_pct)/orginal_diverse_pct,2)) %>%
+  select(geoid,lea_name,st,d_locale_txt,school_year,diverse:pct_change)  %>%
+  filter(school_year == "2016-2017") %>%
+  mutate(change_type = 
+           case_when(
+             orginal_diverse == "Diverse" & diverse == "Diverse" ~ "Still Diverse",
+             orginal_diverse == "Undiverse" & diverse == "Undiverse" ~ "Still Undiverse",
+             orginal_diverse == "Extremely undiverse" & diverse == "Extremely undiverse" ~ "Still Undiverse",
+             orginal_diverse == "Extremely undiverse" & diverse == "Undiverse" ~ "Increased but still Undiverse",
+             orginal_diverse == "Extremely undiverse" & diverse == "Diverse" ~ "Increased Diversity",
+             orginal_diverse == "Undiverse" & diverse == "Diverse" ~ "Increased Diversity",
+             orginal_diverse == "Undiverse" & diverse == "Extremely undiverse" ~ "Decreased Diversity",
+             orginal_diverse == "Diverse" & diverse == "Undiverse" ~ "Decreased Diversity",
+             orginal_diverse == "Diverse" & diverse == "Extremely Undeverse" ~ "Decreased Diversity",
+             TRUE ~ "Other"
+           )) %>%
+  ungroup()
 
 # looks like I was wrong about the lag function. It returns the first value for any values where
-# there are two observations. I'm a bit confused about the pct_change on the first measurement so 
-# I'll have to think that one out when I'm less tired.
+# there are two observations. Looking at the code chunk as a whole, the lag functions set up the 
+# case_when function so we can get a look at the change from '95 to '17 since we see the first measure
+# classification then the second measure classification, then filter for just 16/17. I'm going to change
+# the variable to original_diverse/pct to clear up some confusion on my end.
+
+mo_schools_diverse_chg$change_type <- factor(mo_schools_diverse_chg$change_type,
+                                             levels = c("Still Diverse",
+                                                        "Increased Diversity",
+                                                        "Increased but still Undiverse",
+                                                        "Still Undiverse",
+                                                        "Other"))
+View(mo_schools_diverse_chg %>%
+  filter(change_type == "Other"))
