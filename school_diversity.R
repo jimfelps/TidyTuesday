@@ -30,23 +30,23 @@ mo_schools_diverse_chg <-
   mo_schools %>%
   group_by(geoid) %>%
   mutate(diverse_pct = round(100 - white,2),
-         orginal_diverse = lag(diverse, default = first(diverse)),
-         orginal_diverse_pct = lag(round(100 - white,2), default = first(white)),
+         original_diverse = lag(diverse, default = first(diverse)),
+         original_diverse_pct = lag(round(100 - white,2), default = first(white)),
          pct_change = 
-           round((diverse_pct - orginal_diverse_pct)/orginal_diverse_pct,2)) %>%
+           round((diverse_pct - original_diverse_pct)/original_diverse_pct,2)) %>%
   select(geoid,lea_name,st,d_locale_txt,school_year,diverse:pct_change)  %>%
   filter(school_year == "2016-2017") %>%
   mutate(change_type = 
            case_when(
-             orginal_diverse == "Diverse" & diverse == "Diverse" ~ "Still Diverse",
-             orginal_diverse == "Undiverse" & diverse == "Undiverse" ~ "Still Undiverse",
-             orginal_diverse == "Extremely undiverse" & diverse == "Extremely undiverse" ~ "Still Undiverse",
-             orginal_diverse == "Extremely undiverse" & diverse == "Undiverse" ~ "Increased but still Undiverse",
-             orginal_diverse == "Extremely undiverse" & diverse == "Diverse" ~ "Increased Diversity",
-             orginal_diverse == "Undiverse" & diverse == "Diverse" ~ "Increased Diversity",
-             orginal_diverse == "Undiverse" & diverse == "Extremely undiverse" ~ "Decreased Diversity",
-             orginal_diverse == "Diverse" & diverse == "Undiverse" ~ "Decreased Diversity",
-             orginal_diverse == "Diverse" & diverse == "Extremely Undeverse" ~ "Decreased Diversity",
+             original_diverse == "Extremely undiverse" & diverse == "Diverse" ~ "Still Undiverse", #thought about using Still `Extremely undiverse`` but decided against because the point of the heat map (is that what this is called?) is to highlight the change, not to penalize districts with existing lack of diversity
+             original_diverse == "Extremely undiverse" & diverse == "Undiverse" ~ "Somewhat Increased Diversity",
+             original_diverse == "Extremely undiverse" & diverse == "Extremely undiverse" ~ "Significantly Increased Diversity",
+             original_diverse == "Diverse" & diverse == "Diverse" ~ "Still Diverse",
+             original_diverse == "Diverse" & diverse == "Undiverse" ~ "Somewhat Decreased Diversity",
+             original_diverse == "Diverse" & diverse == "Extremely undiverse" ~ "Significantly Decreased Diversity",
+             original_diverse == "Undiverse" & diverse == "Undiverse" ~ "Still Undiverse",
+             original_diverse == "Undiverse" & diverse == "Diverse" ~ "Somewhat Increased Diversity",
+             original_diverse == "Undiverse" & diverse == "Extremely undiverse" ~ "Somewhat Decreased Diversity",
              TRUE ~ "Other"
            )) %>%
   ungroup()
@@ -58,10 +58,12 @@ mo_schools_diverse_chg <-
 # the variable to original_diverse/pct to clear up some confusion on my end.
 
 mo_schools_diverse_chg$change_type <- factor(mo_schools_diverse_chg$change_type,
-                                             levels = c("Still Diverse",
-                                                        "Increased Diversity",
-                                                        "Increased but still Undiverse",
+                                             levels = c("Significantly Increased Diversity",
+                                                        "Somewhat Increased Diversity",
+                                                        "Still Diverse",
                                                         "Still Undiverse",
-                                                        "Other"))
-View(mo_schools_diverse_chg %>%
-  filter(change_type == "Other"))
+                                                        "Somewhat Decreased Diversity",
+                                                        "Significantly Decreased Diversity",
+                                                        "Other"
+                                                        ))
+
